@@ -3,16 +3,7 @@ defmodule DNS do
   Documentation for DNS.
   """
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> DNS.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def start_server do
+    {:ok, _pid} = Supervisor.start_link([{DNS.DNSServer, 53}], strategy: :one_for_one)
   end
 end
