@@ -1,6 +1,7 @@
 defmodule DNS.DNSServer do
-  use GenServer, Bitwise
+  use GenServer
 
+  @spec start_link(any) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(port \\ 53) do
     GenServer.start_link(__MODULE__, port)
   end
@@ -20,27 +21,23 @@ defmodule DNS.DNSServer do
   end
 
   defp handle_packet(packet, socket, address, port) do
-    IO.inspect(:erlang.iolist_to_binary(packet))
-    build_response(packet)
-    :gen_udp.send(socket, address, port, 'Hello world')
+    {:ok, response} = build_response(packet)
+    IO.inspect response
+    :gen_udp.send(socket, address, port, response)
     {:noreply, socket}
   end
 
-  defp build_response(<<transactionId::size(16), flags::size(16), _data::binary>> = _packet) do
-    <<flag_byte1::8, flag_byte2::8>> = <<flags::16>>
-    IO.inspect(transactionId)
-    IO.inspect(flag_byte1)
-    IO.inspect(flag_byte2)
-
-    <<qr::1, opcode::5, tc::1, rd::1>> = <<flag_byte1::8>>
+  @spec build_response(binary()) :: {:ok, <<_::16>>}
+  defp build_response(<<_transactionId::bits-size(16), flags::bits-size(16), _data::binary>> = _packet) do
+    << _qr::bits-size(1), opcode::bits-size(4), _aa::bits-size(1), _tc::bits-size(1), _rd::bits-size(1), _flag2::8>> = flags
+    qr = <<1::1>>
     aa = <<1::1>>
-
+    tc = <<0::1>>
+    rd = <<0::1>>
     ra = <<0::1>>
     z = <<0::3>>
     rcode = <<0::4>>
 
-    response_flag =
-      <<qr::bitstring, opcode::bitstring, aa::bitstring, tc::bitstring, rd::bitstring,
-        ra::bitstring, z::bitstring, rcode::bitstring>>
+    {:ok, <<qr::bits, opcode::bits, aa::bits, tc::bits, rd::bits, ra::bits, z::bits, rcode::bits>>}
   end
 end
